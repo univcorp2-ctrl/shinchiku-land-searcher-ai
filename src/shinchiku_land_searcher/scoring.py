@@ -10,8 +10,6 @@ PRICE_ALIASES = ("価格", "販売価格", "物件価格", "金額", "price")
 YIELD_ALIASES = ("利回り", "表面利回り", "想定利回り", "満室利回り", "yield")
 WALK_ALIASES = ("徒歩", "駅徒歩", "徒歩分", "最寄駅徒歩", "walk", "walking")
 AGE_ALIASES = ("築年", "築年数", "築", "建築年", "築年月", "age")
-AREA_ALIASES = ("所在地", "住所", "エリア", "address", "location")
-STRUCTURE_ALIASES = ("構造", "建物構造", "structure")
 
 
 def analyze_records(records: list[PropertyRecord], config: AnalysisConfig) -> list[ScoreResult]:
@@ -44,7 +42,6 @@ def _score_record(record: PropertyRecord, config: AnalysisConfig) -> ScoreResult
     gross_yield = parse_percent(_get(raw, YIELD_ALIASES))
     walk = parse_minutes(_get(raw, WALK_ALIASES))
     age = parse_age_years(_get(raw, AGE_ALIASES))
-
     reasons: list[str] = []
     risks: list[str] = []
     score = 50.0
@@ -52,16 +49,15 @@ def _score_record(record: PropertyRecord, config: AnalysisConfig) -> ScoreResult
     if gross_yield is None:
         risks.append("利回りが未取得のため収益性を要確認")
         score -= 8
+    elif gross_yield >= config.min_gross_yield_percent + 2:
+        score += 22
+        reasons.append(f"表面利回りが高め: {gross_yield:.2f}%")
+    elif gross_yield >= config.min_gross_yield_percent:
+        score += 13
+        reasons.append(f"最低利回り条件を満たす: {gross_yield:.2f}%")
     else:
-        if gross_yield >= config.min_gross_yield_percent + 2:
-            score += 22
-            reasons.append(f"表面利回りが高め: {gross_yield:.2f}%")
-        elif gross_yield >= config.min_gross_yield_percent:
-            score += 13
-            reasons.append(f"最低利回り条件を満たす: {gross_yield:.2f}%")
-        else:
-            score -= 18
-            risks.append(f"利回りが基準未満: {gross_yield:.2f}%")
+        score -= 18
+        risks.append(f"利回りが基準未満: {gross_yield:.2f}%")
 
     if price is None:
         risks.append("価格が未取得のため総投資額を要確認")
@@ -104,17 +100,13 @@ def _score_record(record: PropertyRecord, config: AnalysisConfig) -> ScoreResult
     all_text = " ".join(str(v) for v in raw.values() if v not in (None, ""))
     found_keywords = [keyword for keyword in config.risk_keywords if keyword in all_text]
     if found_keywords:
-        penalty = min(25, 7 * len(found_keywords))
-        score -= penalty
+        score -= min(25, 7 * len(found_keywords))
         risks.append("注意キーワード: " + ", ".join(found_keywords))
-
     if not record.url.startswith(("http://", "https://")):
         score -= 8
         risks.append("URLが未取得またはURL形式ではない")
 
     score = max(0.0, min(100.0, round(score, 1)))
-    recommendation = _recommendation(score, risks)
-
     return ScoreResult(
         rank=0,
         row_number=record.row_number,
@@ -125,7 +117,7 @@ def _score_record(record: PropertyRecord, config: AnalysisConfig) -> ScoreResult
         gross_yield_percent=gross_yield,
         walking_minutes=walk,
         building_age_years=age,
-        recommendation=recommendation,
+        recommendation=_recommendation(score, risks),
         reasons=reasons or ["追加確認に値するが、主要指標の取得状況を確認してください"],
         risks=risks,
         raw=raw,
@@ -167,9 +159,7 @@ def parse_percent(value: Any) -> float | None:
         number = float(value)
         return number * 100 if 0 < number <= 1 else number
     match = re.search(r"[-+]?\d+(?:\.\d+)?", str(value).replace(",", ""))
-    if not match:
-        return None
-    return float(match.group(0))
+    return float(match.group(0)) if match else None
 
 
 def parse_minutes(value: Any) -> float | None:
@@ -198,7 +188,6 @@ def parse_age_years(value: Any) -> float | None:
         return float(next(group for group in match.groups() if group))
     year_match = re.search(r"(19\d{2}|20\d{2})", text)
     if year_match:
-        # Static approximation for ranking. Users should verify exact completion date.
         return max(0.0, 2026 - float(year_match.group(1)))
     generic = re.search(r"\d+(?:\.\d+)?", text)
     return float(generic.group(0)) if generic else None
@@ -209,9 +198,7 @@ def parse_price_man_yen(value: Any) -> float | None:
         return None
     if isinstance(value, int | float):
         number = float(value)
-        # Excel values are often yen. Smaller values are usually already man-yen.
         return number / 10000 if number >= 100000 else number
-
     text = str(value).replace(",", "").replace("円", "").strip()
     oku = 0.0
     man = 0.0
@@ -223,7 +210,6 @@ def parse_price_man_yen(value: Any) -> float | None:
         man = float(man_match.group(1))
     if oku_match or man_match:
         return oku + man
-
     match = re.search(r"\d+(?:\.\d+)?", text)
     if not match:
         return None
