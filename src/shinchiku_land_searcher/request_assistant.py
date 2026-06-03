@@ -11,18 +11,7 @@ from shinchiku_land_searcher.excel_reader import is_probable_url
 from shinchiku_land_searcher.models import PropertyRecord, RequestProfile
 
 console = Console()
-
-REQUEST_TEXTS = [
-    "資料請求",
-    "資料を請求",
-    "資料を取り寄せ",
-    "お問い合わせ",
-    "問合せ",
-    "問い合わせ",
-    "Request",
-    "Contact",
-]
-
+REQUEST_TEXTS = ["資料請求", "資料を請求", "資料を取り寄せ", "お問い合わせ", "問合せ", "問い合わせ", "Request", "Contact"]
 FIELD_PATTERNS = {
     "name": ["name", "氏名", "お名前", "姓名", "full_name"],
     "email": ["email", "mail", "メール", "e-mail"],
@@ -68,19 +57,15 @@ def run_browser_assist(
     delay_seconds: float = 2.0,
 ) -> None:
     """Open request pages and assist filling. It never clicks final submit."""
-
     try:
         from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
         from playwright.sync_api import sync_playwright
-    except ImportError as exc:  # pragma: no cover - depends on optional extra
-        raise RuntimeError(
-            "Playwright is not installed. Run: pip install -e '.[browser]' && python -m playwright install chromium"
-        ) from exc
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("Playwright is not installed. Run: pip install -e '.[browser]' && python -m playwright install chromium") from exc
 
     selected = urls[start_index - 1 :]
     if limit:
         selected = selected[:limit]
-
     log_path = output_dir / "request_log.csv"
     write_request_log_header(log_path)
     screenshot_dir = output_dir / "screenshots"
@@ -102,14 +87,12 @@ def run_browser_assist(
                 page.screenshot(path=str(screenshot_path), full_page=True)
                 memo = f"entry_clicked={clicked}; filled={filled}; screenshot={screenshot_path.name}"
                 append_request_log(log_path, url, "prepared", memo)
-                console.print(
-                    "[yellow]送信直前で停止しています。画面を確認し、必要なら手動で送信してください。[/yellow]"
-                )
+                console.print("[yellow]送信直前で停止しています。画面を確認し、必要なら手動で送信してください。[/yellow]")
                 input("確認後にEnterで次のURLへ進みます。スキップした場合もEnter。")
             except PlaywrightTimeoutError as exc:
                 append_request_log(log_path, url, "timeout", str(exc))
                 console.print(f"[red]Timeout:[/red] {exc}")
-            except Exception as exc:  # pragma: no cover - browser runtime variability
+            except Exception as exc:  # pragma: no cover
                 append_request_log(log_path, url, "error", str(exc))
                 console.print(f"[red]Error:[/red] {exc}")
         context.close()
@@ -139,25 +122,18 @@ def fill_profile_fields(page: object, profile: RequestProfile) -> int:
     }
     count = 0
     for field_name, value in values.items():
-        if not value:
-            continue
-        if fill_first_matching_input(page, FIELD_PATTERNS[field_name], value):
+        if value and fill_first_matching_input(page, FIELD_PATTERNS[field_name], value):
             count += 1
     return count
 
 
 def fill_first_matching_input(page: object, patterns: list[str], value: str) -> bool:
-    selectors = ["input", "textarea"]
-    for selector in selectors:
+    for selector in ["input", "textarea"]:
         try:
             elements = page.locator(selector)
-            total = elements.count()
-            for i in range(total):
+            for i in range(elements.count()):
                 element = elements.nth(i)
-                attrs = " ".join(
-                    str(element.get_attribute(attr) or "")
-                    for attr in ["name", "id", "placeholder", "aria-label", "autocomplete"]
-                ).lower()
+                attrs = " ".join(str(element.get_attribute(attr) or "") for attr in ["name", "id", "placeholder", "aria-label", "autocomplete"]).lower()
                 if any(pattern.lower() in attrs for pattern in patterns):
                     current = element.input_value(timeout=1000) if selector == "input" else ""
                     if not current:
