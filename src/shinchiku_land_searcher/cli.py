@@ -16,7 +16,6 @@ from shinchiku_land_searcher.scoring import analyze_records
 
 app = typer.Typer(help="Property document-request assistant and investment ranking CLI.")
 console = Console()
-
 InputArg = Annotated[Path, typer.Option("--input", "-i", help="Input xlsx file path.")]
 OutputArg = Annotated[Path, typer.Option("--output-dir", "-o", help="Output directory.")]
 ConfigArg = Annotated[Path | None, typer.Option("--config", "-c", help="Local YAML config.")]
@@ -40,18 +39,8 @@ def analyze(
     no_header: Annotated[bool, typer.Option("--no-header", help="Use Excel column letters as headers.")] = False,
     ai_provider: Annotated[str, typer.Option("--ai-provider", help="local/openai/anthropic.")] = "local",
 ) -> None:
-    """Analyze properties and write ranking outputs."""
-
-    records = read_property_records(
-        input,
-        sheet_name=sheet,
-        url_column=url_column,
-        header_row=header_row,
-        no_header=no_header,
-        require_url=False,
-    )
-    analysis_config = load_analysis_config(config)
-    results = analyze_records(records, analysis_config)
+    records = read_property_records(input, sheet_name=sheet, url_column=url_column, header_row=header_row, no_header=no_header, require_url=False)
+    results = analyze_records(records, load_analysis_config(config))
     output_dir.mkdir(parents=True, exist_ok=True)
     write_analysis_outputs(results, output_dir)
     ai_comment = generate_ai_comment(results, ai_provider)
@@ -74,33 +63,13 @@ def request(
     start_index: Annotated[int, typer.Option("--start-index", help="1-based URL index to start.")] = 1,
     headless: Annotated[bool, typer.Option("--headless", help="Run browser in headless mode.")] = False,
 ) -> None:
-    """Prepare document requests from URL column.
-
-    Browser mode assists data entry but never clicks the final submit button.
-    """
-
-    records = read_property_records(
-        input,
-        sheet_name=sheet,
-        url_column=url_column,
-        header_row=header_row,
-        no_header=no_header,
-        require_url=True,
-    )
+    records = read_property_records(input, sheet_name=sheet, url_column=url_column, header_row=header_row, no_header=no_header, require_url=True)
     plan_path = write_request_plan(records, output_dir)
     urls = unique_urls(records)
     console.print(f"[green]Request plan created:[/green] {plan_path} ({len(urls)} URLs)")
     if no_browser:
         return
-    profile = load_request_profile(config)
-    run_browser_assist(
-        urls,
-        profile=profile,
-        output_dir=output_dir,
-        limit=limit,
-        start_index=start_index,
-        headless=headless,
-    )
+    run_browser_assist(urls, profile=load_request_profile(config), output_dir=output_dir, limit=limit, start_index=start_index, headless=headless)
 
 
 @app.command(name="run")
@@ -115,34 +84,12 @@ def run_all(
     no_browser: Annotated[bool, typer.Option("--no-browser", help="Only create request_plan.csv.")] = True,
     ai_provider: Annotated[str, typer.Option("--ai-provider", help="local/openai/anthropic.")] = "local",
 ) -> None:
-    """Run analysis and request preparation."""
-
-    analyze(
-        input=input,
-        output_dir=output_dir,
-        config=config,
-        sheet=sheet,
-        url_column=url_column,
-        header_row=header_row,
-        no_header=no_header,
-        ai_provider=ai_provider,
-    )
-    request(
-        input=input,
-        output_dir=output_dir,
-        config=config,
-        sheet=sheet,
-        url_column=url_column,
-        header_row=header_row,
-        no_header=no_header,
-        no_browser=no_browser,
-    )
+    analyze(input=input, output_dir=output_dir, config=config, sheet=sheet, url_column=url_column, header_row=header_row, no_header=no_header, ai_provider=ai_provider)
+    request(input=input, output_dir=output_dir, config=config, sheet=sheet, url_column=url_column, header_row=header_row, no_header=no_header, no_browser=no_browser)
 
 
 @app.command("sample-config")
 def sample_config(output: Annotated[Path, typer.Option("--output", "-o")] = Path("config.local.yaml")) -> None:
-    """Create a local config template."""
-
     source = Path(__file__).resolve().parents[2] / "config.example.yaml"
     output.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
     console.print(f"Created: {output}")
