@@ -1,0 +1,26 @@
+# Copy to config.local.yaml and edit locally. Do not commit personal data.
+analysis:
+  # Example: 30000 means 3億円. Empty means no hard budget penalty.
+  max_price_man_yen:
+  min_gross_yield_percent: 6.0
+  max_walking_minutes: 12
+  max_building_age_years: 35
+  prefer_newer_than_years: 20
+  risk_keywords:
+    - 借地
+    - 再建築不可
+    - 告知事項
+    - 旧耐震
+    - 既存不適格
+    - 傾き
+    - 雨漏り
+    - 滞納
+    - サブリース
+
+request_profile:
+  name: ""
+  email: ""
+  phone: ""
+  postal_code: ""
+  address: ""
+  message: "資料を確認したく、物件資料の送付をお願いいたします。"
