@@ -1,6 +1,4 @@
-# Copy to config.local.yaml and edit locally. Do not commit personal data.
 analysis:
-  # Example: 30000 means 3億円. Empty means no hard budget penalty.
   max_price_man_yen:
   min_gross_yield_percent: 6.0
   max_walking_minutes: 12
