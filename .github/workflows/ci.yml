@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Test
+        run: pytest
+
+      - name: Create sample workbook
+        run: python scripts/create_sample_workbook.py
+
+      - name: Run sample analysis
+        run: |
+          python -m shinchiku_land_searcher analyze \
+            --input sample_data/sample_properties.xlsx \
+            --output-dir outputs \
+            --ai-provider local
+          python -m shinchiku_land_searcher request \
+            --input sample_data/sample_properties.xlsx \
+            --output-dir outputs \
+            --no-browser
+
+      - name: Upload generated outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: property-analysis-outputs
+          path: outputs/
