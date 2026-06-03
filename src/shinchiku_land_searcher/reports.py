@@ -9,18 +9,8 @@ from shinchiku_land_searcher.excel_reader import is_probable_url
 from shinchiku_land_searcher.models import PropertyRecord, ScoreResult
 
 RANKING_COLUMNS = [
-    "rank",
-    "score",
-    "recommendation",
-    "row_number",
-    "title",
-    "url",
-    "price_man_yen",
-    "gross_yield_percent",
-    "walking_minutes",
-    "building_age_years",
-    "reasons",
-    "risks",
+    "rank", "score", "recommendation", "row_number", "title", "url", "price_man_yen",
+    "gross_yield_percent", "walking_minutes", "building_age_years", "reasons", "risks",
 ]
 
 
@@ -53,31 +43,26 @@ def write_ranking_xlsx(results: list[ScoreResult], path: Path) -> None:
 
 
 def write_advice_txt(results: list[ScoreResult], path: Path, extra_ai_comment: str | None = None) -> None:
-    lines: list[str] = []
-    lines.append("# 物件検討優先順位アドバイス")
-    lines.append("")
+    lines: list[str] = ["# 物件検討優先順位アドバイス", ""]
     if not results:
         lines.append("分析対象の物件がありません。")
     else:
         lines.append("## 最初に見るべき物件")
         for result in results[:10]:
-            lines.append(
-                f"{result.rank}. {result.title} / {result.score:.1f}点 / {result.recommendation}"
-            )
+            lines.append(f"{result.rank}. {result.title} / {result.score:.1f}点 / {result.recommendation}")
             lines.append(f"   URL: {result.url}")
             lines.append(f"   理由: {'; '.join(result.reasons)}")
             if result.risks:
                 lines.append(f"   注意: {'; '.join(result.risks)}")
-        lines.append("")
-        lines.append("## 判断の目安")
-        lines.append("- 78点以上: 早めに資料を取り、レントロール・修繕履歴・管理状況を確認")
-        lines.append("- 65点以上: 条件が合えば内見・追加ヒアリング")
-        lines.append("- 50点以上: 価格交渉や出口戦略次第")
-        lines.append("- 50点未満: 重要なリスクや情報不足が解消されるまで後回し")
+        lines.extend([
+            "", "## 判断の目安",
+            "- 78点以上: 早めに資料を取り、レントロール・修繕履歴・管理状況を確認",
+            "- 65点以上: 条件が合えば内見・追加ヒアリング",
+            "- 50点以上: 価格交渉や出口戦略次第",
+            "- 50点未満: 重要なリスクや情報不足が解消されるまで後回し",
+        ])
     if extra_ai_comment:
-        lines.append("")
-        lines.append("## AI補足コメント")
-        lines.append(extra_ai_comment.strip())
+        lines.extend(["", "## AI補足コメント", extra_ai_comment.strip()])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -93,15 +78,13 @@ def write_request_plan(records: list[PropertyRecord], output_dir: Path) -> Path:
             if not is_probable_url(record.url) or record.url in seen:
                 continue
             seen.add(record.url)
-            writer.writerow(
-                {
-                    "index": index,
-                    "row_number": record.row_number,
-                    "url": record.url,
-                    "status": "pending",
-                    "memo": "human confirmation required before final submit",
-                }
-            )
+            writer.writerow({
+                "index": index,
+                "row_number": record.row_number,
+                "url": record.url,
+                "status": "pending",
+                "memo": "human confirmation required before final submit",
+            })
             index += 1
     return path
 
@@ -115,13 +98,9 @@ def _result_row(result: ScoreResult) -> dict[str, object]:
         "title": result.title,
         "url": result.url,
         "price_man_yen": result.price_man_yen if result.price_man_yen is not None else "",
-        "gross_yield_percent": result.gross_yield_percent
-        if result.gross_yield_percent is not None
-        else "",
+        "gross_yield_percent": result.gross_yield_percent if result.gross_yield_percent is not None else "",
         "walking_minutes": result.walking_minutes if result.walking_minutes is not None else "",
-        "building_age_years": result.building_age_years
-        if result.building_age_years is not None
-        else "",
+        "building_age_years": result.building_age_years if result.building_age_years is not None else "",
         "reasons": "; ".join(result.reasons),
         "risks": "; ".join(result.risks),
     }
