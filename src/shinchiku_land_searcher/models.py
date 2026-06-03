@@ -6,8 +6,6 @@ from typing import Any
 
 @dataclass(frozen=True)
 class PropertyRecord:
-    """One property row read from Excel."""
-
     row_number: int
     url: str
     raw: dict[str, Any]
@@ -15,8 +13,6 @@ class PropertyRecord:
 
 @dataclass(frozen=True)
 class ScoreResult:
-    """Analysis result for one property."""
-
     rank: int
     row_number: int
     score: float
@@ -34,30 +30,18 @@ class ScoreResult:
 
 @dataclass(frozen=True)
 class AnalysisConfig:
-    """User preferences used by the score model."""
-
     max_price_man_yen: float | None = None
     min_gross_yield_percent: float = 6.0
     max_walking_minutes: float = 12.0
     max_building_age_years: float = 35.0
     prefer_newer_than_years: float = 20.0
     risk_keywords: tuple[str, ...] = (
-        "借地",
-        "再建築不可",
-        "告知事項",
-        "旧耐震",
-        "既存不適格",
-        "傾き",
-        "雨漏り",
-        "滞納",
-        "サブリース",
+        "借地", "再建築不可", "告知事項", "旧耐震", "既存不適格", "傾き", "雨漏り", "滞納", "サブリース"
     )
 
 
 @dataclass(frozen=True)
 class RequestProfile:
-    """Contact profile used for assisted form filling."""
-
     name: str = ""
     email: str = ""
     phone: str = ""
