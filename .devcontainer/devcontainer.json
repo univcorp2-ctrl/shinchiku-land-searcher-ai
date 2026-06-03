@@ -1,0 +1,17 @@
+{
+  "name": "shinchiku-land-searcher-ai",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "pip install -e '.[dev,browser,ai]' && python -m playwright install chromium",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  }
+}
