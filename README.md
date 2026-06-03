@@ -17,8 +17,6 @@ ExcelのA列に入っている物件URLを読み取り、資料請求の準備�
 
 ## 想定入力
 
-ユーザー環境の例:
-
 ```powershell
 G:\マイドライブ\AI_Agents\github\repos\Shinchiku_Land_Searcher\final_output\Apartment_Investment_Master.xlsx
 ```
@@ -32,15 +30,8 @@ python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[browser,ai]"
 python -m playwright install chromium
-```
-
-設定ファイルを作ります。
-
-```bash
 cp config.example.yaml config.local.yaml
 ```
-
-`config.local.yaml` に氏名、メール、電話番号などを入力します。GitHubにはコミットしないでください。
 
 ### 物件を分析する
 
@@ -51,16 +42,11 @@ python -m shinchiku_land_searcher analyze \
   --output-dir outputs
 ```
 
-出力:
-
-- `outputs/ranking.csv`
-- `outputs/ranking.xlsx`
-- `outputs/advice.txt`
-- `outputs/request_plan.csv`
+出力: `outputs/ranking.csv`, `outputs/ranking.xlsx`, `outputs/advice.txt`, `outputs/request_plan.csv`
 
 ### 資料請求の準備をする
 
-ブラウザを開かずに一覧だけ作る場合:
+一覧だけ作る場合:
 
 ```bash
 python -m shinchiku_land_searcher request \
@@ -93,23 +79,7 @@ python -m shinchiku_land_searcher run \
 
 ## AIプロバイダー
 
-標準は `local` で、APIキー不要です。
-
-OpenAIを使う場合:
-
-```bash
-export OPENAI_API_KEY="..."
-python -m shinchiku_land_searcher analyze --input Apartment_Investment_Master.xlsx --ai-provider openai
-```
-
-Anthropicを使う場合:
-
-```bash
-export ANTHROPIC_API_KEY="..."
-python -m shinchiku_land_searcher analyze --input Apartment_Investment_Master.xlsx --ai-provider anthropic
-```
-
-Codex / Claude で作業する場合は、最初に `CODEX.md` と `CLAUDE.md` を読ませてください。
+標準は `local` で、APIキー不要です。OpenAIを使う場合は `OPENAI_API_KEY`、Anthropicを使う場合は `ANTHROPIC_API_KEY` を環境変数で設定してください。
 
 ## 本番運用に必要なもの
 
@@ -122,12 +92,6 @@ Codex / Claude で作業する場合は、最初に `CODEX.md` と `CLAUDE.md` �
 ## CI/CD
 
 GitHub Actions は push / pull_request / workflow_dispatch で実行されます。テスト、ruff、サンプルExcel分析、成果物artifact作成を行います。
-
-Actions URL:
-
-```text
-https://github.com/{{OWNER}}/shinchiku-land-searcher-ai/actions
-```
 
 ## アーキテクチャ
 
